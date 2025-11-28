@@ -1,14 +1,4 @@
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
-
-/**
- * @title ArtLink Protocol
- * @dev A decentralized protocol for digital art creation, marketplace, and royalty distribution
- * @notice This contract enables artists to mint, list, sell NFTs with automated royalty payments
- */
-contract ArtLinkProtocol {
-    
-    // Structs
+Structs
     struct Artwork {
         uint256 tokenId;
         address payable artist;
@@ -42,20 +32,8 @@ contract ArtLinkProtocol {
         bool isSecondarySale;
     }
     
-    // State variables
-    address public owner;
-    uint256 public platformFeePercentage;
-    uint256 public tokenCounter;
-    uint256 public saleCounter;
-    uint256 public totalVolume;
-    bool private locked;
-    
-    // Constants
-    uint256 public constant MAX_ROYALTY = 30; // 30% maximum royalty
-    uint256 public constant MIN_PRICE = 0.001 ether;
-    uint256 public constant VERIFICATION_FEE = 0.05 ether;
-    
-    // Mappings
+    Constants
+    uint256 public constant MAX_ROYALTY = 30; Mappings
     mapping(uint256 => Artwork) public artworks;
     mapping(uint256 => address) public tokenOwner;
     mapping(address => Artist) public artists;
@@ -64,51 +42,7 @@ contract ArtLinkProtocol {
     mapping(address => uint256[]) public userCollections;
     mapping(uint256 => address[]) public artworkOwnershipHistory;
     
-    // Events
-    event ArtworkMinted(
-        uint256 indexed tokenId,
-        address indexed artist,
-        string title,
-        uint256 price,
-        uint256 timestamp
-    );
-    event ArtworkListed(
-        uint256 indexed tokenId,
-        uint256 price,
-        uint256 timestamp
-    );
-    event ArtworkUnlisted(
-        uint256 indexed tokenId,
-        uint256 timestamp
-    );
-    event ArtworkSold(
-        uint256 indexed tokenId,
-        address indexed seller,
-        address indexed buyer,
-        uint256 price,
-        uint256 royaltyPaid,
-        bool isSecondarySale
-    );
-    event ArtistVerified(
-        address indexed artist,
-        uint256 timestamp
-    );
-    event RoyaltyPaid(
-        uint256 indexed tokenId,
-        address indexed artist,
-        uint256 amount
-    );
-    event PriceUpdated(
-        uint256 indexed tokenId,
-        uint256 oldPrice,
-        uint256 newPrice
-    );
-    event PlatformFeeUpdated(
-        uint256 oldFee,
-        uint256 newFee
-    );
-    
-    // Modifiers
+    Modifiers
     modifier onlyOwner() {
         require(msg.sender == owner, "ArtLink: Caller is not the owner");
         _;
@@ -136,41 +70,7 @@ contract ArtLinkProtocol {
      */
     constructor() {
         owner = msg.sender;
-        platformFeePercentage = 2; // 2% platform fee
-        tokenCounter = 0;
-        saleCounter = 0;
-        locked = false;
-    }
-    
-    /**
-     * @dev Allows artists to register on the platform
-     * @param profileHash IPFS hash of artist profile information
-     */
-    function registerArtist(string memory profileHash) external {
-        require(!artists[msg.sender].isVerified, "ArtLink: Already registered");
-        require(bytes(profileHash).length > 0, "ArtLink: Invalid profile hash");
-        
-        artists[msg.sender] = Artist({
-            isVerified: false,
-            artworksCreated: 0,
-            totalEarnings: 0,
-            reputation: 0,
-            profileHash: profileHash,
-            registeredAt: block.timestamp
-        });
-    }
-    
-    /**
-     * @dev Allows artists to get verified by paying verification fee
-     */
-    function getVerified() external payable noReentrant {
-        require(bytes(artists[msg.sender].profileHash).length > 0, "ArtLink: Must register first");
-        require(!artists[msg.sender].isVerified, "ArtLink: Already verified");
-        require(msg.value >= VERIFICATION_FEE, "ArtLink: Insufficient verification fee");
-        
-        artists[msg.sender].isVerified = true;
-        
-        // Transfer fee to platform
+        platformFeePercentage = 2; Transfer fee to platform
         (bool success, ) = owner.call{value: msg.value}("");
         require(success, "ArtLink: Fee transfer failed");
         
@@ -302,49 +202,24 @@ contract ArtLinkProtocol {
         uint256 salePrice = artwork.price;
         bool isSecondarySale = artwork.salesCount > 0;
         
-        // Calculate fees
-        uint256 platformFee = (salePrice * platformFeePercentage) / 100;
-        uint256 royaltyFee = 0;
-        uint256 sellerAmount = salePrice - platformFee;
-        
-        // Calculate and pay royalty if secondary sale
+        Calculate and pay royalty if secondary sale
         if (isSecondarySale) {
             royaltyFee = (salePrice * artwork.royaltyPercentage) / 100;
             sellerAmount -= royaltyFee;
             
-            // Pay royalty to original artist
-            (bool royaltySuccess, ) = artwork.artist.call{value: royaltyFee}("");
-            require(royaltySuccess, "ArtLink: Royalty payment failed");
-            
-            artists[artwork.artist].totalEarnings += royaltyFee;
-            emit RoyaltyPaid(tokenId, artwork.artist, royaltyFee);
-        } else {
-            // First sale - artist is seller, so they get full amount minus platform fee
+            First sale - artist is seller, so they get full amount minus platform fee
             artists[artwork.artist].totalEarnings += sellerAmount;
         }
         
-        // Pay seller
-        (bool sellerSuccess, ) = seller.call{value: sellerAmount}("");
-        require(sellerSuccess, "ArtLink: Seller payment failed");
-        
-        // Pay platform fee
+        Pay platform fee
         (bool feeSuccess, ) = owner.call{value: platformFee}("");
         require(feeSuccess, "ArtLink: Platform fee payment failed");
         
-        // Update ownership
-        address previousOwner = tokenOwner[tokenId];
-        tokenOwner[tokenId] = msg.sender;
-        userCollections[msg.sender].push(tokenId);
-        artworkOwnershipHistory[tokenId].push(msg.sender);
-        
-        // Update artwork state
+        Update artwork state
         artwork.isListed = false;
         artwork.salesCount++;
         
-        // Update reputation
-        artists[artwork.artist].reputation += 5;
-        
-        // Record sale
+        Record sale
         saleCounter++;
         sales[saleCounter] = Sale({
             saleId: saleCounter,
@@ -567,3 +442,6 @@ contract ArtLinkProtocol {
         revert("ArtLink: Direct transfers not allowed");
     }
 }
+// 
+Contract End
+// 
